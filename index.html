@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>사미 드립백 내리기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one phone column — 준비 → 타이머(현재 단계 크게) → 마무리. 머그 물높이가 진행을 보여줌 */
+:root{
+  --bg:#f6f7f4; --surface:#ffffff; --ink:#1f2a26; --muted:#5f6b66; --line:#dfe4e0;
+  --accent:#4f7a5e; --accent-soft:#e3ece5; --coffee:#6b4630; --coffee-soft:#c9a68a; --warn:#b35c2e;
+  --display:'Gowun Batang',serif; --body:'IBM Plex Sans KR',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a18; --surface:#1d2522; --ink:#e7ece9; --muted:#9aa7a1; --line:#2e3a35;
+  --accent:#8fbf9d; --accent-soft:#25352c; --coffee:#d9a77f; --coffee-soft:#7a5640; --warn:#e39a6f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a18; --surface:#1d2522; --ink:#e7ece9; --muted:#9aa7a1; --line:#2e3a35;
+  --accent:#8fbf9d; --accent-soft:#25352c; --coffee:#d9a77f; --coffee-soft:#7a5640; --warn:#e39a6f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;margin:0}
+.wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header .eyebrow{font-size:13px;color:var(--muted);letter-spacing:.04em}
+h1{font-family:var(--display);font-size:30px;line-height:1.25;margin:4px 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted)}
+.specs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.spec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.spec b{display:block;font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+.spec span{font-size:12px;color:var(--muted)}
+h2{font-size:18px;margin:0 0 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.prep{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.prep li label{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;border:1px solid var(--line);cursor:pointer}
+.prep input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.prep strong{display:block}
+.prep small{color:var(--muted);font-size:14px}
+.prep input:checked + div{opacity:.5;text-decoration:line-through}
+.timer{display:flex;flex-direction:column;gap:16px}
+.stage{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:center}
+.mug{width:110px;max-width:100%}
+.clock{font-family:var(--mono);font-size:52px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.target{margin-top:8px;font-size:15px;color:var(--muted)}
+.target b{font-family:var(--mono);font-size:26px;color:var(--coffee);font-variant-numeric:tabular-nums}
+.add{margin-top:4px;font-size:14px;color:var(--muted)}
+.add b{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.now{background:var(--accent-soft);border-radius:14px;padding:14px 16px}
+.now .label{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+.now .title{font-size:22px;font-weight:700;margin:2px 0}
+.now .desc{margin:0;color:var(--ink)}
+.next{font-size:14px;color:var(--muted);margin:8px 2px 0}
+.next b{color:var(--ink)}
+.controls{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.btn{border:0;border-radius:14px;padding:16px;font:700 18px var(--body);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--bg)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:500}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.prep label:focus-within{outline:3px solid var(--coffee-soft);outline-offset:2px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.steps li{display:grid;grid-template-columns:52px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:baseline}
+.steps li:first-child{border-top:0}
+.steps .t{font-family:var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.steps .ml{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;white-space:nowrap}
+.steps li.done{opacity:.45}
+.steps li.active .t,.steps li.active .ml{color:var(--coffee)}
+.steps li.active{font-weight:700}
+.tips{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.tips li::marker{color:var(--accent)}
+.cup-guide p{margin:0;color:var(--muted);font-size:14px}
+.cup-guide .cup-amount{font-size:18px;color:var(--ink);margin-bottom:8px}
+.video-link{display:block;color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.video-link img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--bg)}
+.video-link span{display:block;padding:12px 14px;font-weight:700}
+.video-link:hover span{background:var(--accent-soft)}
+.video-link:focus-visible{outline:3px solid var(--coffee-soft);outline-offset:3px}
+.video-note{font-size:14px;color:var(--muted);margin:12px 0 0}
+footer{font-size:13px;color:var(--muted);text-align:center}
+.done-msg{font-family:var(--display);font-size:22px;color:var(--coffee)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">한 잔, 한 입, 한 자락 · 집에서 한 잔 더</div>
+    <h1>사미 드립백 내리기</h1>
+    <p>패러데이 에티오피아 사미를 집에서 한 잔 더. 시작을 누르고 안내에 따라 부어 주세요. <strong>2분 30초 안에 끝납니다.</strong></p>
+    <div class="specs" aria-label="기본 레시피">
+      <div class="spec"><b>12g</b><span>원두</span></div>
+      <div class="spec"><b>94–95℃</b><span>물 온도</span></div>
+      <div class="spec"><b>165g</b><span>총 물양</span></div>
+      <div class="spec"><b>2:30</b><span>이내 종료</span></div>
+    </div>
+  </header>
+
+  <section class="card cup-guide" aria-labelledby="h-cup">
+    <h2 id="h-cup">165g은 종이컵으로 얼마나?</h2>
+    <p class="cup-amount">작은 종이컵 <strong>한 컵보다 조금 적게</strong></p>
+    <p>물 165g은 대략 165mL예요. <strong>180mL 종이컵 기준 약 9/10컵</strong>, 가득 한 컵에서 약 한 큰술 덜어낸 양입니다. 컵에 적힌 용량을 확인해 주세요.</p>
+    <p style="margin-top:8px">전체 추출에 쓰는 물의 양이에요. 이 물을 아래 안내에 맞춰 나눠 부으세요. 정확히 맞추려면 저울을 쓰면 좋아요.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-prep">
+    <h2 id="h-prep">준비 (1~2분)</h2>
+    <ul class="prep">
+      <!-- 끓인 뒤 30초 대기는 Bodum Travel Press 공식 사용 안내에도 있는 실용적인 시작점이며, 정확한 94~95℃ 보장은 아님. 드립백 전용 실측 자료는 아님. https://www.bodum.com/us/en/11057-01bus-travel-press -->
+      <li><label><input type="checkbox" id="p1"><div><strong>물 끓이기</strong><small>평창수·백산수·삼다수를 추천해요. 온도 조절이 되면 94~95℃로, 없으면 팔팔 끓인 뒤 가열을 멈추고 약 30초 식혀 주세요. 식는 정도는 주전자와 물양에 따라 달라요. 커피에 붓는 물은 총 165g입니다.</small></div></label></li>
+      <li><label><input type="checkbox" id="p2"><div><strong>머그컵 데우기</strong><small>뜨거운 물을 조금 부었다가 버려 주세요. 커피가 덜 식어요.</small></div></label></li>
+      <li><label><input type="checkbox" id="p3"><div><strong>드립백 걸고 저울 영점 맞추기</strong><small>봉투를 톡톡 털어 가루를 모으고 점선을 뜯어 양쪽 걸이를 컵에 걸어요. 원두가 든 드립백까지 저울에 올린 뒤 0g으로 맞춥니다. 붓는 동안 영점을 다시 맞추지 마세요.</small></div></label></li>
+    </ul>
+  </section>
+
+  <section class="card timer" aria-labelledby="h-timer">
+    <h2 id="h-timer" style="margin:0">내리기</h2>
+    <p style="margin:0">처음에는 커피 가루 전체를 살짝 적실 만큼만 부어요. 시작 후 30초가 되면 남은 물을 <strong>세 번에 나누어</strong> 부으면 됩니다. 붓는 때는 타이머가 알려 드려요.</p>
+    <div class="stage">
+      <svg class="mug" viewBox="0 0 110 110" aria-hidden="true">
+        <defs><clipPath id="cup"><path d="M14 22 H80 V86 a12 12 0 0 1 -12 12 H26 a12 12 0 0 1 -12 -12 Z"/></clipPath></defs>
+        <rect id="fill" x="14" y="98" width="66" height="0" fill="var(--coffee)" clip-path="url(#cup)"/>
+        <path d="M14 22 H80 V86 a12 12 0 0 1 -12 12 H26 a12 12 0 0 1 -12 -12 Z" fill="none" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M80 40 h8 a12 12 0 0 1 0 24 h-8" fill="none" stroke="var(--ink)" stroke-width="3"/>
+        <line id="mark" x1="10" x2="84" y1="98" y2="98" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 3"/>
+      </svg>
+      <div>
+        <div class="clock" id="clock" aria-live="off">0:00</div>
+        <div class="target" id="target">누적 <b id="targetG">0</b> g</div>
+        <div class="add" id="addLine">이번에 추가 <b id="addG">0</b> g</div>
+      </div>
+    </div>
+
+    <div class="now" aria-live="polite">
+      <div class="label" id="nowLabel">시작 전</div>
+      <div class="title" id="nowTitle">준비되면 시작을 누르세요</div>
+      <p class="desc" id="nowDesc">첫 물을 붓기 시작할 때 시작을 누르세요. 단계가 시간에 맞춰 자동으로 넘어가고, 소리로 알려 줍니다.</p>
+    </div>
+    <div class="next" id="next"></div>
+    <div class="controls">
+      <button class="btn primary" id="go" type="button">시작</button>
+      <button class="btn ghost" id="reset" type="button">처음으로</button>
+    </div>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <section class="card" aria-labelledby="h-tips">
+    <h2 id="h-tips">맛있게 내리는 요령</h2>
+    <ul class="tips">
+      <li><strong>2분 30초 이내</strong>에 끝내도록 안내합니다. 타이머가 단계와 종료를 자동으로 맞춰 줍니다.</li>
+      <li>저울로 누적량을 맞추는 것을 권장합니다. 총 물 165g과 컵에 남는 양은 같지 않습니다.</li>
+      <li>가운데부터 작은 원을 그리며 천천히 부어 주세요. 가장자리 종이에 바로 붓지 않아요.</li>
+      <li>넘치려 하면 잠깐 멈췄다 나눠 부으세요.</li>
+      <li>드립백을 뺄 때 물이 남아 있어도 빼고, 짜지 마세요.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="h-video">
+    <h2 id="h-video">드립백 내리기, 영상으로 보기</h2>
+    <a class="video-link" href="https://youtu.be/efRB3DOOceA?si=-X_x8hx0Hin0nnmD" target="_blank" rel="noopener noreferrer" aria-label="드립백 참고 영상 YouTube에서 보기 — 새 창">
+      <img src="https://i.ytimg.com/vi/efRB3DOOceA/hqdefault.jpg" alt="전기포트로 내려먹는 더! 쉬운 드립백 커피 영상 썸네일" loading="lazy" width="480" height="270">
+      <span>전기포트로 내려먹는 더! 쉬운 드립백 커피<br>▶ YouTube에서 보기</span>
+    </a>
+    <p class="video-note">퍼밀_permeal</p>
+    <p class="video-note">물 붓는 모습을 참고해 보세요. 물양과 시간은 위의 사미 레시피를 따라 주세요.</p>
+  </section>
+
+  <footer>〈한 잔, 한 입, 한 자락〉 · 패러데이 에티오피아 사미 · 소리꾼 남경우</footer>
+</div>
+
+<script>
+(function(){
+  const TOTAL = 165;
+  const COMPLETE_AT = 145; // 2:25 자동 완료, clamp
+  // 안내 시간표는 사용자 요청으로 정한 값.
+  const STEPS = [
+    {at:0,   id:'bloom',  label:'1 / 5 · 뜸', title:'커피 가루를 살짝 적셔요', desc:'첫 물을 붓기 시작할 때 시작을 누르세요. 마른 가루가 남지 않도록 전체를 고루 적셔 주세요(약 30g). 처음 붓기 시작한 때부터 30초까지 기다려요.', add:30, cum:30},
+    {at:30,  id:'p1',     label:'2 / 5 · 세 번 중 첫 번째', title:'이제 첫 번째 물을 부어요', desc:'가운데부터 작은 원을 그리며 약 15초 동안 부드럽게 부어 주세요. 55g을 더해 누적 85g까지 맞춥니다.', add:55, cum:85},
+    {at:55,  id:'p2',     label:'3 / 5 · 세 번 중 두 번째', title:'두 번째 물을 부어요', desc:'같은 방법으로 약 15초 동안 한 번 더 부어 주세요. 45g을 더해 누적 130g까지 맞춥니다.', add:45, cum:130},
+    {at:80,  id:'p3',     label:'4 / 5 · 세 번 중 마지막', title:'남은 물을 마저 부어요', desc:'마지막으로 남은 물을 약 15초 동안 부어 주세요. 35g을 더해 누적 165g까지 맞춘 뒤 기다립니다.', add:35, cum:165},
+    {at:140, id:'remove', label:'5 / 5 · 빼기', title:'드립백 빼기', desc:'물이 남아 있어도 드립백을 빼세요. 짜지 마세요.', add:0, cum:165, remove:true}
+  ];
+  let running = false, started = false, finished = false;
+  let startAt = 0, wallStart = 0, elapsed = 0, raf = 0, stepIdx = -1, lastBeepIdx = -1;
+  let wake = null, actx = null;
+  const $ = id => document.getElementById(id);
+  const fmt = s => Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+  function clampElapsed(s){ return Math.min(Math.max(0, s), COMPLETE_AT); }
+  function stepIndexFor(t){
+    let idx = 0;
+    for(let i=0;i<STEPS.length;i++){ if(t >= STEPS[i].at) idx = i; }
+    return idx;
+  }
+  function nextBoundary(t){
+    for(let i=0;i<STEPS.length;i++){ if(STEPS[i].at > t) return STEPS[i].at; }
+    return COMPLETE_AT;
+  }
+  function renderSteps(){
+    const rows = STEPS.map(s=>{
+      const right = s.remove ? '빼기' : ('+'+s.add+' → '+s.cum+'g');
+      return {at:s.at, title:s.title, right:right};
+    }).concat([{at:COMPLETE_AT, title:'완료', right:'종료'}]);
+    $('steps').innerHTML = rows.map((s,i)=>
+      '<li data-i="'+i+'"><span class="t">'+fmt(s.at)+'</span><span>'+s.title+'</span><span class="ml">'+s.right+'</span></li>'
+    ).join('');
+  }
+  function beep(){
+    try{
+      if(!actx) return;
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.frequency.value=880; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(.0001,actx.currentTime); g.gain.exponentialRampToValueAtTime(.25,actx.currentTime+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.35); o.start(); o.stop(actx.currentTime+.4);
+    }catch(e){}
+    try{navigator.vibrate && navigator.vibrate(200)}catch(e){}
+  }
+  function setFill(cum){
+    const y = 98 - (cum/TOTAL)*76;
+    $('mark').setAttribute('y1', y); $('mark').setAttribute('y2', y);
+    const h = (cum/TOTAL)*76;
+    $('fill').setAttribute('y', 98-h); $('fill').setAttribute('height', h);
+  }
+  function doComplete(fromBeep){
+    if(finished) return;
+    finished = true; running = false; cancelAnimationFrame(raf);
+    elapsed = COMPLETE_AT; stepIdx = STEPS.length - 1; release();
+    $('go').textContent = '다시 내리기';
+    if(fromBeep) beep();
+    paint();
+  }
+  function paint(){
+    $('clock').textContent = fmt(elapsed);
+    document.querySelectorAll('#steps li').forEach((li,k)=>{
+      if(finished){
+        li.classList.toggle('active', k===STEPS.length);
+        li.classList.toggle('done', k<STEPS.length);
+      } else if(stepIdx < 0){
+        li.classList.remove('active','done');
+      } else {
+        li.classList.toggle('active', k===stepIdx);
+        li.classList.toggle('done', k<stepIdx);
+      }
+    });
+    if(finished){
+      $('nowLabel').textContent='완성';
+      $('nowTitle').innerHTML='<span class="done-msg">맛있게 드세요</span>';
+      $('nowDesc').textContent='향 먼저 맡아 보고 한 모금. 오늘 들은 소리 한 자락도 함께 떠올려 보세요.';
+      $('next').textContent='2분 30초 이내 안내로 종료되었습니다.';
+      $('targetG').textContent = String(TOTAL);
+      $('addLine').innerHTML = '이번에 추가 <b id="addG">0</b> g';
+      setFill(TOTAL);
+      return;
+    }
+    if(stepIdx < 0){
+      $('nowLabel').textContent='시작 전';
+      $('nowTitle').textContent='준비되면 시작을 누르세요';
+      $('nowDesc').textContent='첫 물을 붓기 시작할 때 시작을 누르세요. 단계가 시간에 맞춰 자동으로 넘어가고, 소리로 알려 줍니다.';
+      $('next').innerHTML='첫 단계: <b>가루 적시기 · 추가 30g · 누적 30g</b>';
+      $('targetG').textContent='0';
+      $('addLine').innerHTML = '이번에 추가 <b id="addG">0</b> g';
+      setFill(0);
+      return;
+    }
+    const st = STEPS[stepIdx];
+    $('nowLabel').textContent = st.label;
+    $('nowTitle').textContent = st.title;
+    $('nowDesc').textContent = st.desc;
+    $('targetG').textContent = String(st.cum);
+    if(st.remove){
+      $('addLine').textContent = '추가 없음 · 누적 '+st.cum+'g 유지';
+    } else {
+      $('addLine').innerHTML = '이번에 추가 <b id="addG">'+st.add+'</b> g';
+    }
+    setFill(st.cum);
+    const nb = nextBoundary(elapsed);
+    const left = Math.max(0, Math.ceil(nb - elapsed));
+    if(st.remove){
+      $('next').innerHTML = left>0
+        ? '완료까지 <b>'+left+'초</b> · 물이 남아 있어도 빼고 짜지 마세요'
+        : '곧 자동 종료됩니다';
+    } else {
+      const nextStep = STEPS[stepIdx+1];
+      const nextName = nextStep ? nextStep.title : '완료';
+      $('next').innerHTML = '다음(<b>'+nextName+'</b>)까지 <b>'+left+'초</b>';
+    }
+  }
+  function syncFromClock(){
+    if(!started || finished) return clampElapsed(elapsed);
+    if(running){
+      elapsed = clampElapsed((Date.now() - wallStart)/1000);
+    }
+    const idx = stepIndexFor(elapsed);
+    if(idx !== stepIdx){
+      stepIdx = idx;
+      if(idx !== lastBeepIdx){ lastBeepIdx = idx; beep(); }
+    }
+    if(elapsed >= COMPLETE_AT){
+      doComplete(true);
+      return COMPLETE_AT;
+    }
+    return elapsed;
+  }
+  function tick(){
+    syncFromClock();
+    paint();
+    if(running) raf = requestAnimationFrame(tick);
+  }
+  async function lock(){ try{ wake = await navigator.wakeLock.request('screen'); }catch(e){} }
+  function release(){ try{ wake && wake.release(); }catch(e){} wake=null; }
+  function beginFresh(){
+    started = true; finished = false; stepIdx = 0; lastBeepIdx = 0; elapsed = 0;
+    running = true; startAt = performance.now(); wallStart = Date.now();
+    $('go').textContent='잠깐 멈춤';
+    lock(); beep(); paint(); raf = requestAnimationFrame(tick);
+  }
+  $('go').addEventListener('click', ()=>{
+    try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume && actx.resume(); }catch(e){}
+    if(finished){ beginFresh(); return; }
+    if(!started){ beginFresh(); return; }
+    if(running){
+      syncFromClock();
+      if(finished) return;
+      running=false; cancelAnimationFrame(raf);
+      $('go').textContent='이어서'; release(); paint(); return;
+    }
+    running=true; wallStart=Date.now()-elapsed*1000; startAt=performance.now()-elapsed*1000;
+    $('go').textContent='잠깐 멈춤'; lock();
+    raf=requestAnimationFrame(tick); paint();
+  });
+  $('reset').addEventListener('click', ()=>{
+    running=false; cancelAnimationFrame(raf); started=false; finished=false;
+    elapsed=0; stepIdx=-1; lastBeepIdx=-1; $('go').textContent='시작'; release();
+    paint();
+  });
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState!=='visible') return;
+    if(!started || finished) return;
+    if(running){
+      syncFromClock();
+      if(!finished){ lock(); paint(); }
+    }
+  });
+  renderSteps(); paint();
+})();
+</script>
+</body>
+</html>
